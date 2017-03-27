@@ -4648,6 +4648,7 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 * @param {String} url
 * @param {Object} options
 * @param {Function} on_complete
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
 Texture.fromURL = function(url, options, on_complete, gl) {
@@ -4685,11 +4686,14 @@ Texture.fromURL = function(url, options, on_complete, gl) {
 		var that = this;
 		image.onload = function()
 		{
-			options.texture = texture;
-			GL.Texture.fromImage(this, options);
-			delete texture["ready"]; //texture.ready = true;
-			if(on_complete)
-				on_complete(texture, url);
+			that = this;
+			gl.execute( function() {
+				options.texture = texture;
+				GL.Texture.fromImage(that, options);
+				delete texture["ready"]; //texture.ready = true;
+				if(on_complete)
+					on_complete(texture, url);
+			});
 		}
 		image.onerror = function()
 		{
@@ -5005,9 +5009,12 @@ Texture.generateCubemapCrossFacesInfo = function(width, column)
 * @param {Image} image
 * @param {Object} options
 * @param {Function} on_complete callback
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
-Texture.cubemapFromURL = function(url, options, on_complete) {
+Texture.cubemapFromURL = function(url, options, on_complete, gl) {
+	gl = gl || global.gl;
+		
 	options = options || {};
 	options.texture_type = gl.TEXTURE_CUBE_MAP;
 	var texture = options.texture || new GL.Texture(1, 1, options);
@@ -5027,12 +5034,15 @@ Texture.cubemapFromURL = function(url, options, on_complete) {
 	var that = this;
 	image.onload = function()
 	{
-		options.texture = texture;
-		texture = GL.Texture.cubemapFromImage(this, options);
-		if(texture)
-			delete texture["ready"]; //texture.ready = true;
-		if(on_complete)
-			on_complete(texture);
+		that = this;
+		gl.execute( function() {
+			options.texture = texture;
+			texture = GL.Texture.cubemapFromImage(that, options);
+			if(texture)
+				delete texture["ready"]; //texture.ready = true;
+			if(on_complete)
+				on_complete(texture);
+		});
 	}
 
 	return texture;	
@@ -5869,10 +5879,13 @@ Shader.getUniformFunc = function( data )
 * @param {String} vs_path the url to the vertex shader
 * @param {String} fs_path the url to the fragment shader
 * @param {Function} on_complete [Optional] a callback to call once the shader is ready.
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Shader}
 */
-Shader.fromURL = function( vs_path, fs_path, on_complete )
+Shader.fromURL = function( vs_path, fs_path, on_complete, gl )
 {
+	gl = gl || global.gl;
+	
 	//create simple shader first
 	var vs_code = "\n\
 			precision highp float;\n\
@@ -5909,7 +5922,10 @@ Shader.fromURL = function( vs_path, fs_path, on_complete )
 
 	function compileShader()
 	{
-		var true_shader = new GL.Shader(true_vs, true_fs);
+		var true_shader;
+		gl.execute( function() {
+			true_shader = new GL.Shader(true_vs, true_fs);
+		});
 		for(var i in true_shader)
 			shader[i] = true_shader[i];
 		shader.ready = true;

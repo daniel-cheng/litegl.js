@@ -259,6 +259,10 @@
 
                             </li>
                             <li class="index-item method">
+                                <a href="#method_Shader.getBlendShader">Shader.getBlendShader</a>
+
+                            </li>
+                            <li class="index-item method">
                                 <a href="#method_Shader.getBlurShader">Shader.getBlurShader</a>
 
                             </li>
@@ -327,7 +331,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l297"><code>..&#x2F;src&#x2F;shader.js:297</code></a>
+        <a href="../files/.._src_shader.js.html#l303"><code>..&#x2F;src&#x2F;shader.js:303</code></a>
         </p>
 
 
@@ -370,7 +374,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l415"><code>..&#x2F;src&#x2F;shader.js:415</code></a>
+        <a href="../files/.._src_shader.js.html#l421"><code>..&#x2F;src&#x2F;shader.js:421</code></a>
         </p>
 
 
@@ -457,7 +461,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l447"><code>..&#x2F;src&#x2F;shader.js:447</code></a>
+        <a href="../files/.._src_shader.js.html#l453"><code>..&#x2F;src&#x2F;shader.js:453</code></a>
         </p>
 
 
@@ -566,7 +570,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l429"><code>..&#x2F;src&#x2F;shader.js:429</code></a>
+        <a href="../files/.._src_shader.js.html#l435"><code>..&#x2F;src&#x2F;shader.js:435</code></a>
         </p>
 
 
@@ -698,7 +702,7 @@ This info is stored so it works faster during rendering.</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l308"><code>..&#x2F;src&#x2F;shader.js:308</code></a>
+        <a href="../files/.._src_shader.js.html#l314"><code>..&#x2F;src&#x2F;shader.js:314</code></a>
         </p>
 
 
@@ -891,7 +895,7 @@ This info is stored so it works faster during rendering.</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l357"><code>..&#x2F;src&#x2F;shader.js:357</code></a>
+        <a href="../files/.._src_shader.js.html#l363"><code>..&#x2F;src&#x2F;shader.js:363</code></a>
         </p>
 
 
@@ -1039,7 +1043,7 @@ It throws an exception if there is any error in the code</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l717"><code>..&#x2F;src&#x2F;shader.js:717</code></a>
+        <a href="../files/.._src_shader.js.html#l734"><code>..&#x2F;src&#x2F;shader.js:734</code></a>
         </p>
 
 
@@ -1111,7 +1115,7 @@ It throws an exception if there is any error in the code</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l528"><code>..&#x2F;src&#x2F;shader.js:528</code></a>
+        <a href="../files/.._src_shader.js.html#l534"><code>..&#x2F;src&#x2F;shader.js:534</code></a>
         </p>
 
 
@@ -1180,6 +1184,9 @@ Also, imports cannot have other imports inside.</p>
                 <li class="arg">
                         <code>on_complete</code>
                 </li>
+                <li class="arg">
+                        <code>gl</code>
+                </li>
             </ul><span class="paren">)</span>
         </div>
 
@@ -1245,6 +1252,17 @@ Also, imports cannot have other imports inside.</p>
                     </div>
 
                 </li>
+                <li class="param">
+                        <code class="param-name">gl</code>
+                        <span class="type">WebGLContext</span>
+
+
+                    <div class="param-description">
+                        <p>[Optional] if omitted, the <a href="http://global.gl">global.gl</a> is used</p>
+
+                    </div>
+
+                </li>
             </ul>
         </div>
 
@@ -1255,6 +1273,38 @@ Also, imports cannot have other imports inside.</p>
                         <span class="type">Shader</span>:
             </div>
         </div>
+
+
+</div>
+<div id="method_Shader.getBlendShader" class="method item">
+    <h3 class="name"><code>Shader.getBlendShader</code></h3>
+
+        <span class="paren">()</span>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/.._src_shader.js.html#l825"><code>..&#x2F;src&#x2F;shader.js:825</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Returns a shader that blends two textures
+shader must have: u_factor, u_texture, u_texture2</p>
+
+    </div>
+
+
 
 
 </div>
@@ -1273,7 +1323,7 @@ Also, imports cannot have other imports inside.</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l808"><code>..&#x2F;src&#x2F;shader.js:808</code></a>
+        <a href="../files/.._src_shader.js.html#l839"><code>..&#x2F;src&#x2F;shader.js:839</code></a>
         </p>
 
 
@@ -1305,7 +1355,7 @@ shader params are: vec2 u_offset, float u_intensity</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l765"><code>..&#x2F;src&#x2F;shader.js:765</code></a>
+        <a href="../files/.._src_shader.js.html#l782"><code>..&#x2F;src&#x2F;shader.js:782</code></a>
         </p>
 
 
@@ -1337,7 +1387,7 @@ shader params vec4 u_color and sampler2D u_texture</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l995"><code>..&#x2F;src&#x2F;shader.js:995</code></a>
+        <a href="../files/.._src_shader.js.html#l1026"><code>..&#x2F;src&#x2F;shader.js:1026</code></a>
         </p>
 
 
@@ -1368,7 +1418,7 @@ shader params vec4 u_color and sampler2D u_texture</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l959"><code>..&#x2F;src&#x2F;shader.js:959</code></a>
+        <a href="../files/.._src_shader.js.html#l990"><code>..&#x2F;src&#x2F;shader.js:990</code></a>
         </p>
 
 
@@ -1400,7 +1450,7 @@ params are vec2 u_viewportSize, vec2 u_iViewportSize or you can call shader.setu
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l794"><code>..&#x2F;src&#x2F;shader.js:794</code></a>
+        <a href="../files/.._src_shader.js.html#l811"><code>..&#x2F;src&#x2F;shader.js:811</code></a>
         </p>
 
 
@@ -1432,7 +1482,7 @@ shader must have: u_position, u_size, u_viewport, u_transform, u_texture_area (v
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l780"><code>..&#x2F;src&#x2F;shader.js:780</code></a>
+        <a href="../files/.._src_shader.js.html#l797"><code>..&#x2F;src&#x2F;shader.js:797</code></a>
         </p>
 
 
@@ -1464,7 +1514,7 @@ shader must have: u_position, u_size, u_viewport, u_transform (mat3)</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l750"><code>..&#x2F;src&#x2F;shader.js:750</code></a>
+        <a href="../files/.._src_shader.js.html#l767"><code>..&#x2F;src&#x2F;shader.js:767</code></a>
         </p>
 
 
@@ -1567,7 +1617,7 @@ Used internally from extractShaderInfo to optimize calls</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l735"><code>..&#x2F;src&#x2F;shader.js:735</code></a>
+        <a href="../files/.._src_shader.js.html#l752"><code>..&#x2F;src&#x2F;shader.js:752</code></a>
         </p>
 
 
@@ -1620,7 +1670,7 @@ Used internally from extractShaderInfo to optimize calls</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_shader.js.html#l322"><code>..&#x2F;src&#x2F;shader.js:322</code></a>
+        <a href="../files/.._src_shader.js.html#l328"><code>..&#x2F;src&#x2F;shader.js:328</code></a>
         </p>
 
 

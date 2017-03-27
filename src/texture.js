@@ -846,6 +846,7 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 * @param {String} url
 * @param {Object} options
 * @param {Function} on_complete
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
 Texture.fromURL = function(url, options, on_complete, gl) {
@@ -883,11 +884,14 @@ Texture.fromURL = function(url, options, on_complete, gl) {
 		var that = this;
 		image.onload = function()
 		{
-			options.texture = texture;
-			GL.Texture.fromImage(this, options);
-			delete texture["ready"]; //texture.ready = true;
-			if(on_complete)
-				on_complete(texture, url);
+			that = this;
+			gl.execute( function() {
+				options.texture = texture;
+				GL.Texture.fromImage(that, options);
+				delete texture["ready"]; //texture.ready = true;
+				if(on_complete)
+					on_complete(texture, url);
+			});
 		}
 		image.onerror = function()
 		{
@@ -1203,9 +1207,12 @@ Texture.generateCubemapCrossFacesInfo = function(width, column)
 * @param {Image} image
 * @param {Object} options
 * @param {Function} on_complete callback
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
-Texture.cubemapFromURL = function(url, options, on_complete) {
+Texture.cubemapFromURL = function(url, options, on_complete, gl) {
+	gl = gl || global.gl;
+		
 	options = options || {};
 	options.texture_type = gl.TEXTURE_CUBE_MAP;
 	var texture = options.texture || new GL.Texture(1, 1, options);
@@ -1225,12 +1232,15 @@ Texture.cubemapFromURL = function(url, options, on_complete) {
 	var that = this;
 	image.onload = function()
 	{
-		options.texture = texture;
-		texture = GL.Texture.cubemapFromImage(this, options);
-		if(texture)
-			delete texture["ready"]; //texture.ready = true;
-		if(on_complete)
-			on_complete(texture);
+		that = this;
+		gl.execute( function() {
+			options.texture = texture;
+			texture = GL.Texture.cubemapFromImage(that, options);
+			if(texture)
+				delete texture["ready"]; //texture.ready = true;
+			if(on_complete)
+				on_complete(texture);
+		});
 	}
 
 	return texture;	

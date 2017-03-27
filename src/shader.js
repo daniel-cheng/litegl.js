@@ -245,10 +245,13 @@ Shader.getUniformFunc = function( data )
 * @param {String} vs_path the url to the vertex shader
 * @param {String} fs_path the url to the fragment shader
 * @param {Function} on_complete [Optional] a callback to call once the shader is ready.
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Shader}
 */
-Shader.fromURL = function( vs_path, fs_path, on_complete )
+Shader.fromURL = function( vs_path, fs_path, on_complete, gl )
 {
+	gl = gl || global.gl;
+	
 	//create simple shader first
 	var vs_code = "\n\
 			precision highp float;\n\
@@ -285,7 +288,10 @@ Shader.fromURL = function( vs_path, fs_path, on_complete )
 
 	function compileShader()
 	{
-		var true_shader = new GL.Shader(true_vs, true_fs);
+		var true_shader;
+		gl.execute( function() {
+			true_shader = new GL.Shader(true_vs, true_fs);
+		});
 		for(var i in true_shader)
 			shader[i] = true_shader[i];
 		shader.ready = true;

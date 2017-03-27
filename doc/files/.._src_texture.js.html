@@ -140,13 +140,13 @@ global.Texture = GL.Texture = function Texture(width, height, options, gl) {
 	//set settings
 	this.width = width;
 	this.height = height;
-	this.format = options.format || gl.RGBA; //(if gl.DEPTH_COMPONENT remember format: gl.UNSIGNED_SHORT)
-	this.type = options.type || gl.UNSIGNED_BYTE; //gl.UNSIGNED_SHORT, gl.FLOAT or gl.HALF_FLOAT_OES (or gl.HIGH_PRECISION_FORMAT which could be half or float)
 	this.texture_type = options.texture_type || gl.TEXTURE_2D; //or gl.TEXTURE_CUBE_MAP
-	this.magFilter = options.magFilter || options.filter || gl.LINEAR;
-	this.minFilter = options.minFilter || options.filter || gl.LINEAR;
-	this.wrapS = options.wrap || options.wrapS || gl.CLAMP_TO_EDGE;
-	this.wrapT = options.wrap || options.wrapT || gl.CLAMP_TO_EDGE;
+	this.format = options.format || Texture.DEFAULT_FORMAT; //gl.RGBA (if gl.DEPTH_COMPONENT remember format: gl.UNSIGNED_SHORT)
+	this.type = options.type || Texture.DEFAULT_TYPE; //gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT or gl.HALF_FLOAT_OES (or gl.HIGH_PRECISION_FORMAT which could be half or float)
+	this.magFilter = options.magFilter || options.filter || Texture.DEFAULT_MAG_FILTER;
+	this.minFilter = options.minFilter || options.filter || Texture.DEFAULT_MIN_FILTER;
+	this.wrapS = options.wrap || options.wrapS || Texture.DEFAULT_WRAP_S; 
+	this.wrapT = options.wrap || options.wrapT || Texture.DEFAULT_WRAP_T;
 
 	//precompute the max amount of texture units
 	if(!Texture.MAX_TEXTURE_IMAGE_UNITS)
@@ -216,6 +216,13 @@ global.Texture = GL.Texture = function Texture(width, height, options, gl) {
 		gl.activeTexture(gl.TEXTURE0);
 	}
 }
+
+Texture.DEFAULT_TYPE = GL.UNSIGNED_BYTE;
+Texture.DEFAULT_FORMAT = GL.RGBA;
+Texture.DEFAULT_MAG_FILTER = GL.LINEAR;
+Texture.DEFAULT_MIN_FILTER = GL.LINEAR;
+Texture.DEFAULT_WRAP_S = GL.CLAMP_TO_EDGE;
+Texture.DEFAULT_WRAP_T = GL.CLAMP_TO_EDGE;
 
 //used for render to FBOs
 Texture.framebuffer = null;
@@ -933,6 +940,7 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 * @param {String} url
 * @param {Object} options
 * @param {Function} on_complete
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
 Texture.fromURL = function(url, options, on_complete, gl) {
@@ -970,11 +978,14 @@ Texture.fromURL = function(url, options, on_complete, gl) {
 		var that = this;
 		image.onload = function()
 		{
-			options.texture = texture;
-			GL.Texture.fromImage(this, options);
-			delete texture[&quot;ready&quot;]; //texture.ready = true;
-			if(on_complete)
-				on_complete(texture, url);
+			that = this;
+			gl.execute( function() {
+				options.texture = texture;
+				GL.Texture.fromImage(that, options);
+				delete texture[&quot;ready&quot;]; //texture.ready = true;
+				if(on_complete)
+					on_complete(texture, url);
+			});
 		}
 		image.onerror = function()
 		{
@@ -1136,7 +1147,7 @@ Texture.fromShader = function(width, height, shader, options) {
 	var texture = new GL.Texture( width, height, options );
 	//copy content
 	texture.drawTo(function() {
-		gl.disable( gl.BLEND );
+		gl.disable( gl.BLEND ); 
 		gl.disable( gl.DEPTH_TEST );
 		gl.disable( gl.CULL_FACE );
 		var mesh = Mesh.getScreenQuad();
@@ -1290,9 +1301,12 @@ Texture.generateCubemapCrossFacesInfo = function(width, column)
 * @param {Image} image
 * @param {Object} options
 * @param {Function} on_complete callback
+* @param {WebGLContext} gl [Optional] if omitted, the global.gl is used
 * @return {Texture} the texture
 */
-Texture.cubemapFromURL = function(url, options, on_complete) {
+Texture.cubemapFromURL = function(url, options, on_complete, gl) {
+	gl = gl || global.gl;
+		
 	options = options || {};
 	options.texture_type = gl.TEXTURE_CUBE_MAP;
 	var texture = options.texture || new GL.Texture(1, 1, options);
@@ -1312,12 +1326,15 @@ Texture.cubemapFromURL = function(url, options, on_complete) {
 	var that = this;
 	image.onload = function()
 	{
-		options.texture = texture;
-		texture = GL.Texture.cubemapFromImage(this, options);
-		if(texture)
-			delete texture[&quot;ready&quot;]; //texture.ready = true;
-		if(on_complete)
-			on_complete(texture);
+		that = this;
+		gl.execute( function() {
+			options.texture = texture;
+			texture = GL.Texture.cubemapFromImage(that, options);
+			if(texture)
+				delete texture[&quot;ready&quot;]; //texture.ready = true;
+			if(on_complete)
+				on_complete(texture);
+		});
 	}
 
 	return texture;	
@@ -1464,15 +1481,9 @@ Texture.prototype.toBlob = function(flip_y, type)
 {
 	//dump to canvas
 	var canvas = this.toCanvas(null,flip_y);
-	if(canvas.toBlob)
-	{
-		var blob = canvas.toBlob(null,type);
-		if(blob)
-			return blob;
-	}
 
-	//use the slow method
-	var data = this.toDataURL( type );
+	//use the slow method (because its sync)
+	var data = canvas.toDataURL( type );
 	var index = data.indexOf(&quot;,&quot;);
 	var base64_data = data.substr(index+1);
 	var binStr = atob( base64_data );
@@ -1484,6 +1495,26 @@ Texture.prototype.toBlob = function(flip_y, type)
 	var blob = new Blob( [arr], {type: type || &#x27;image/png&#x27;} );
 	return blob;
 }
+
+//faster depending on the browser
+Texture.prototype.toBlobAsync = function(flip_y, type, callback)
+{
+	//dump to canvas
+	var canvas = this.toCanvas(null,flip_y);
+
+	//some browser support a fast way to blob a canvas
+	if(canvas.toBlob)
+	{
+		canvas.toBlob( callback, type );
+		return;
+	}
+
+	//use the slow method
+	var blob = this.toBlob( flip_y, type );
+	if(callback)
+		callback(blob);
+}
+
 
 /**
 * returns a base64 String containing all the data from the texture
@@ -1536,12 +1567,66 @@ Texture.prototype.generateMetadata = function()
 
 Texture.compareFormats = function(a,b)
 {
-	if(!a || !b) return false;
-	if(a == b) return true;
-	if(a.width != b.width || a.height != b.height || a.type != b.type || a.texture_type != b.texture_type) 
+	if(!a || !b) 
+		return false;
+	if(a == b) 
+		return true;
+
+	if( a.width != b.width || 
+		a.height != b.height || 
+		a.type != b.type || //gl.UNSIGNED_BYTE
+		a.format != b.format || //gl.RGB
+		a.texture_type != b.texture_type) //gl.TEXTURE_2D
 		return false;
 	return true;
 }
+
+/**
+* blends texture A and B and stores the result in OUT
+* @method blend
+* @param {Texture} a
+* @param {Texture} b
+* @param {Texture} out [optional]
+* @return {Object}
+*/
+Texture.blend = function( a, b, factor, out )
+{
+	if(!a || !b) 
+		return false;
+	if(a == b) 
+	{
+		if(out)
+			a.copyTo(out);
+		else
+			a.toViewport();
+		return true;
+	}
+
+	gl.disable( gl.BLEND );
+	gl.disable( gl.DEPTH_TEST );
+	gl.disable( gl.CULL_FACE );
+
+	var shader = GL.Shader.getBlendShader();
+	var mesh = GL.Mesh.getScreenQuad();
+	b.bind(1);
+	shader.uniforms({u_texture: 0, u_texture2: 1, u_factor: factor});
+
+	if(out)
+	{
+		out.drawTo( function(){
+			if(a == out || b == out)
+				throw(&quot;Blend output cannot be the same as the input&quot;);
+			a.bind(0);
+			shader.draw( mesh, gl.TRIANGLES );
+		});
+		return true;
+	}
+
+	a.bind(0);
+	shader.draw( mesh, gl.TRIANGLES );
+	return true;
+}
+
 
 /**
 * returns a white texture of 1x1 pixel 
@@ -1574,6 +1659,55 @@ Texture.getBlackTexture = function()
 	return gl.textures[&quot;:black&quot;] = new GL.Texture(1,1,{ pixel_data: color });
 }
 
+
+/* Texture pool */
+Texture.getTemporary = function( width, height, options )
+{
+	if(!Texture.temporary_pool)
+		Texture.temporary_pool = [];
+
+	var pool = Texture.temporary_pool;
+	var result = null;
+
+	var texture_type = GL.TEXTURE_2D;
+	var type = Texture.DEFAULT_TYPE;
+	var format = Texture.DEFAULT_FORMAT;
+
+	if(options)
+	{
+		if(options.texture_type)
+			texture_type = options.texture_type;
+		if(options.type)
+			type = options.type;
+		if(options.format)
+			format = options.format;
+	}
+
+	for(var i = 0; i &lt; pool.length; ++i)
+	{
+		var tex = pool[i];
+
+		if( tex.width != width || 
+			tex.height != height ||
+			tex.type != type ||
+			tex.texture_type != texture_type ||
+			tex.format != format )
+			continue;
+		pool.splice(i,1); //remove from the pool
+		return tex;
+	}
+
+	//not found, create it
+	var tex = new GL.Texture( width, height, { type: type, texture_type: texture_type, format: format });
+	return tex;
+}
+
+Texture.releaseTemporary = function( tex )
+{
+	if(!Texture.temporary_pool)
+		Texture.temporary_pool = [];
+	Texture.temporary_pool.push( tex );
+}
     </pre>
 </div>
                     </div>
