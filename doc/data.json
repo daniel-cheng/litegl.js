@@ -2467,7 +2467,7 @@
         },
         {
             "file": "../src/octree.js",
-            "line": 215,
+            "line": 238,
             "description": "Test collision between ray and triangles in the octree",
             "itemtype": "method",
             "name": "testRay",
@@ -2503,7 +2503,7 @@
         },
         {
             "file": "../src/octree.js",
-            "line": 262,
+            "line": 285,
             "description": "test collision between sphere and the triangles in the octree (only test if there is any vertex inside the sphere)",
             "itemtype": "method",
             "name": "testSphere",
