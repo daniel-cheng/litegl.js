@@ -55,7 +55,9 @@ Octree.prototype.buildFromMesh = function(mesh)
 	vec3.sub(root.min, root.min, margin);
 	vec3.add(root.max, root.max, margin);
 
-	root.faces = [];
+	root.facesVertices = [];
+	root.facesIndices = [];
+	root.facesElement = [];
 	root.inside = 0;
 
 
@@ -64,86 +66,105 @@ Octree.prototype.buildFromMesh = function(mesh)
 	{
 		for(var i = 0; i < triangles.length; i+=3)
 		{
-			var face = new Float32Array([vertices[triangles[i]*3], vertices[triangles[i]*3+1],vertices[triangles[i]*3+2],
-						vertices[triangles[i+1]*3], vertices[triangles[i+1]*3+1],vertices[triangles[i+1]*3+2],
-						vertices[triangles[i+2]*3], vertices[triangles[i+2]*3+1],vertices[triangles[i+2]*3+2]]);
-			this.addToNode(face,root,0);
+			var faceVertices	= new Float32Array([vertices[triangles[i]*3], vertices[triangles[i]*3+1],vertices[triangles[i]*3+2],
+													vertices[triangles[i+1]*3], vertices[triangles[i+1]*3+1],vertices[triangles[i+1]*3+2],
+													vertices[triangles[i+2]*3], vertices[triangles[i+2]*3+1],vertices[triangles[i+2]*3+2]]);
+			var faceIndices 	= new Float32Array([triangles[i], triangles[i+1], triangles[i+2]]);
+			var faceElement 	= i/3;
+			
+			this.addToNode(faceVertices,faceIndices,faceElement,root,0);
 		}
 	}
 	else
 	{
 		for(var i = 0; i < vertices.length; i+=9)
 		{
-			var face = new Float32Array( vertices.subarray(i,i+9) );
-			this.addToNode(face,root,0);
+			var faceVertices 	= new Float32Array(vertices.subarray(i,i+9));
+			var faceIndices 	= new Float32Array([i, i+1, i+2]);
+			var faceElement 	= i/9;
+			this.addToNode(faceVertices,faceIndices,faceElement,root,0);
 		}
 	}
 
 	return root;
 }
 
-Octree.prototype.addToNode = function(face,node, depth)
+Octree.prototype.addToNode = function(faceVertices,faceIndices,faceElement,node,depth)
 {
 	node.inside += 1;
 
 	//has children
 	if(node.c)
 	{
-		var aabb = this.computeAABB(face);
+		var aabb = this.computeAABB(faceVertices);
 		var added = false;
 		for(var i in node.c)
 		{
 			var child = node.c[i];
-			if (Octree.isInsideAABB(aabb,child))
+			if(Octree.isInsideAABB(aabb,child))
 			{
-				this.addToNode(face,child, depth+1);
+				this.addToNode(faceVertices,faceIndices,faceElement,child,depth+1);
 				added = true;
 				break;
 			}
 		}
 		if(!added)
 		{
-			if(node.faces == null)
-				node.faces = [];
-			node.faces.push(face);
+			if(node.facesVertices == null) node.facesVertices = [];
+			if(node.facesIndices == null) node.facesIndices = [];
+			if(node.facesElement == null) node.facesElement = [];
+			node.facesVertices.push(faceVertices);
+			node.facesIndices.push(faceIndices);
+			node.facesElement.push(faceElement);
 		}
 	}
 	else //add till full, then split
 	{
-		if(node.faces == null) node.faces = [];
-		node.faces.push(face);
+		if(node.facesVertices == null) node.facesVertices = [];
+		if(node.facesIndices == null) node.facesIndices = [];
+		if(node.facesElement == null) node.facesElement = [];
+		node.facesVertices.push(faceVertices);
+		node.facesIndices.push(faceIndices);
+		node.facesElement.push(faceElement);
 
 		//split
-		if(node.faces.length > this.max_node_triangles && depth < Octree.MAX_OCTREE_DEPTH)
+		if(node.facesVertices.length > this.max_node_triangles && depth < Octree.MAX_OCTREE_DEPTH)
 		{
 			this.splitNode(node);
 			if(this.total_depth < depth + 1)
 				this.total_depth = depth + 1;
 
-			var faces = node.faces.concat();
-			node.faces = null;
+			var facesVertices = node.facesVertices.concat();
+			var facesIndices = node.facesIndices.concat();
+			var facesElement = node.facesElement.concat();
+			node.facesVertices = null;
+			node.facesIndices = null;
+			node.facesElement = null;
 
 			//redistribute all nodes
-			for(var i in faces)
+			for(var i in facesVertices)
 			{
-				var face = faces[i];
-				var aabb = this.computeAABB(face);
+				var faceVertices = facesVertices[i];
+				var faceIndices = facesIndices[i];
+				var faceElement = facesElement[i];
+				var aabb = this.computeAABB(faceVertices);
 				var added = false;
 				for(var j in node.c)
 				{
 					var child = node.c[j];
-					if (Octree.isInsideAABB(aabb,child))
+					if(Octree.isInsideAABB(aabb,child))
 					{
-						this.addToNode(face,child, depth+1);
+						this.addToNode(faceVertices,faceIndices,faceElement,child,depth+1);
 						added = true;
 						break;
 					}
 				}
-				if (!added)
+				if(!added)
 				{
-					if(node.faces == null)
-						node.faces = [];
-					node.faces.push(face);
+					if(node.facesVertices == null) node.facesVertices = [];
+					if(node.facesIndices == null) node.facesIndices = [];
+					if(node.facesElement == null) node.facesElement = [];
+					node.facesVertices.push(faceVertices);
 				}
 			}
 		}
@@ -166,7 +187,9 @@ Octree.prototype.splitNode = function(node)
 
 		newnode.min = [ node.min[0] + half[0] * ref[0],  node.min[1] + half[1] * ref[1],  node.min[2] + half[2] * ref[2]];
 		newnode.max = [newnode.min[0] + half[0], newnode.min[1] + half[1], newnode.min[2] + half[2]];
-		newnode.faces = null;
+		newnode.facesVertices = null;
+		newnode.facesIndices = null;
+		newnode.facesElement = null;
 		newnode.inside = 0;
 		node.c.push(newnode);
 	}
@@ -291,13 +314,16 @@ Octree.testRayInNode = function( node, origin, direction )
 	var prev_test = null;
 	octree_tested_boxes += 1;
 
-	//test faces
-	if(node.faces)
-		for(var i = 0, l = node.faces.length; i < l; ++i)
+	//test facesVertices
+	if(node.facesVertices)
+		for(var i = 0, l = node.facesVertices.length; i < l; ++i)
 		{
-			var face = node.faces[i];
+			var faceVertices = node.facesVertices[i];
+			var faceIndices = node.facesIndices[i];
+			var faceElement = node.facesElement[i];
+		
 			octree_tested_triangles += 1;
-			test = Octree.hitTestTriangle( origin, direction, face.subarray(0,3) , face.subarray(3,6), face.subarray(6,9) );
+			test = Octree.hitTestTriangle( origin, direction, faceVertices.subarray(0,3) , faceVertices.subarray(3,6), faceVertices.subarray(6,9), faceIndices, faceElement );
 			if (test==null)
 				continue;
 			if(prev_test)
@@ -350,10 +376,10 @@ Octree.testSphereInNode = function( node, origin, radius2 )
 	octree_tested_boxes += 1;
 
 	//test faces
-	if(node.faces)
-		for(var i = 0, l = node.faces.length; i < l; ++i)
+	if(node.facesVertices)
+		for(var i = 0, l = node.facesVertices.length; i < l; ++i)
 		{
-			var face = node.faces[i];
+			var face = node.facesVertices[i];
 			octree_tested_triangles += 1;
 			if( Octree.testSphereTriangle( origin, radius2, face.subarray(0,3) , face.subarray(3,6), face.subarray(6,9) ) )
 				return true;
@@ -440,7 +466,7 @@ Octree.hitTestTriangle = (function(){
 	var toHit = vec3.create();
 	var tmp = vec3.create();
 	
-	return function(origin, ray, A, B, C) {
+	return function(origin, ray, A, B, C, indices, element) {
 		vec3.subtract( AB, B, A );
 		vec3.subtract( AC, C, A );
 		var normal = vec3.cross( vec3.create(), AB, AC ); //returned
@@ -463,8 +489,11 @@ Octree.hitTestTriangle = (function(){
 			var divide = dot00 * dot11 - dot01 * dot01;
 			var u = (dot11 * dot02 - dot01 * dot12) / divide;
 			var v = (dot00 * dot12 - dot01 * dot02) / divide;
-			if (u >= 0 && v >= 0 && u + v <= 1)
-				return new HitTest(t, hit, normal);
+			var w = 1 - u - v;
+			if (u >= 0 && v >= 0 && u + v <= 1) {
+				var barycentricCoords = vec3.fromValues(w, v, u);
+				return new HitTest(t, hit, normal, barycentricCoords, indices, element);
+			}
 		}
 	    return null;
 	};

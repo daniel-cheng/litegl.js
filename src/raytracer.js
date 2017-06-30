@@ -5,10 +5,13 @@
 // This is the object used to return hit test results. If there are no
 // arguments, the constructed argument represents a hit infinitely far
 // away.
-global.HitTest = GL.HitTest = function HitTest(t, hit, normal) {
+global.HitTest = GL.HitTest = function HitTest(t, hit, normal, barycentricCoords, indices, element) {
   this.t = arguments.length ? t : Number.MAX_VALUE;
   this.hit = hit;
   this.normal = normal;
+  this.barycentricCoords = barycentricCoords;
+  this.indices = indices;
+  this.element = element;
 }
 
 // ### .mergeWith(other)
@@ -20,6 +23,9 @@ HitTest.prototype = {
       this.t = other.t;
       this.hit = other.hit;
       this.normal = other.normal;
+      this.barycentricCoords = other.barycentricCoords;
+      this.indices = other.indices;
+      this.element = other.element;
     }
   }
 };
@@ -162,12 +168,13 @@ Raytracer.hitTestSphere = function(origin, ray, center, radius) {
 };
 
 
-// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c)
+// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c, d, e, f, element)
 // 
 // Traces the ray starting from `origin` along `ray` against the triangle defined
-// by the points `a`, `b`, and `c`. Returns a `HitTest` with the information or
-// `null` for no intersection.
-Raytracer.hitTestTriangle = function(origin, ray, a, b, c) {
+// by the points `a`, `b`, and `c`. Returns a `HitTest` with the information,
+// including the vertex indices `d`, `e`, and `f`, as well as element index `element`.
+// If no intersection, return `null`. 
+Raytracer.hitTestTriangle = function(origin, ray, a, b, c, indices, element) {
   var ab = vec3.subtract(vec3.create(), b,a );
   var ac = vec3.subtract(vec3.create(), c,a );
   var normal = vec3.cross( vec3.create(), ab,ac);
@@ -185,7 +192,11 @@ Raytracer.hitTestTriangle = function(origin, ray, a, b, c) {
     var divide = dot00 * dot11 - dot01 * dot01;
     var u = (dot11 * dot02 - dot01 * dot12) / divide;
     var v = (dot00 * dot12 - dot01 * dot02) / divide;
-    if (u >= 0 && v >= 0 && u + v <= 1) return new HitTest(t, hit, normal);
+	var w = 1 - u - v;
+    if (u >= 0 && v >= 0 && u + v <= 1) {
+		var barycentricCoords = vec3.fromValues(w, v, u);
+		return new HitTest(t, hit, normal, barycentricCoords, indices, element);
+	}
   }
 
   return null;
