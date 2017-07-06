@@ -9,6 +9,7 @@ global.HitTest = GL.HitTest = function HitTest(t, hit, normal, barycentricCoords
   this.t = arguments.length ? t : Number.MAX_VALUE;
   this.hit = hit;
   this.normal = normal;
+  this.face = null;
   this.barycentricCoords = barycentricCoords;
   this.indices = indices;
   this.element = element;
@@ -23,6 +24,7 @@ HitTest.prototype = {
       this.t = other.t;
       this.hit = other.hit;
       this.normal = other.normal;
+	  this.face = other.face;
       this.barycentricCoords = other.barycentricCoords;
       this.indices = other.indices;
       this.element = other.element;
@@ -168,11 +170,11 @@ Raytracer.hitTestSphere = function(origin, ray, center, radius) {
 };
 
 
-// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c, d, e, f, element)
+// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c, indices, element)
 // 
 // Traces the ray starting from `origin` along `ray` against the triangle defined
 // by the points `a`, `b`, and `c`. Returns a `HitTest` with the information,
-// including the vertex indices `d`, `e`, and `f`, as well as element index `element`.
+// including the vertex `indices`, as well as element index `element`.
 // If no intersection, return `null`. 
 Raytracer.hitTestTriangle = function(origin, ray, a, b, c, indices, element) {
   var ab = vec3.subtract(vec3.create(), b,a );

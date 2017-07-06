@@ -25,7 +25,7 @@
 * @constructor
 */
 
-global.Texture = GL.Texture = function Texture(width, height, options, gl) {
+global.Texture = GL.Texture = function Texture( width, height, options, gl ) {
 	options = options || {};
 
 	//used to avoid problems with resources moving between different webgl context
@@ -47,12 +47,13 @@ global.Texture = GL.Texture = function Texture(width, height, options, gl) {
 	this.width = width;
 	this.height = height;
 	this.texture_type = options.texture_type || gl.TEXTURE_2D; //or gl.TEXTURE_CUBE_MAP
-	this.format = options.format || Texture.DEFAULT_FORMAT; //gl.RGBA (if gl.DEPTH_COMPONENT remember format: gl.UNSIGNED_SHORT)
+	this.format = options.format || Texture.DEFAULT_FORMAT; //gl.RGBA (if gl.DEPTH_COMPONENT remember type: gl.UNSIGNED_SHORT)
 	this.type = options.type || Texture.DEFAULT_TYPE; //gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT or gl.HALF_FLOAT_OES (or gl.HIGH_PRECISION_FORMAT which could be half or float)
 	this.magFilter = options.magFilter || options.filter || Texture.DEFAULT_MAG_FILTER;
 	this.minFilter = options.minFilter || options.filter || Texture.DEFAULT_MIN_FILTER;
 	this.wrapS = options.wrap || options.wrapS || Texture.DEFAULT_WRAP_S; 
 	this.wrapT = options.wrap || options.wrapT || Texture.DEFAULT_WRAP_T;
+	this.data = null; //where the data came from
 
 	//precompute the max amount of texture units
 	if(!Texture.MAX_TEXTURE_IMAGE_UNITS)
@@ -95,7 +96,10 @@ global.Texture = GL.Texture = function Texture(width, height, options, gl) {
 
 		var pixel_data = options.pixel_data;
 		if(pixel_data && !pixel_data.buffer)
+		{
 			pixel_data = new (this.type == gl.FLOAT ? Float32Array : Uint8Array)( pixel_data );
+			this.data = pixel_data;
+		}
 
 		//gl.TEXTURE_1D is not supported by WebGL...
 		if(this.texture_type == gl.TEXTURE_2D)
@@ -111,12 +115,12 @@ global.Texture = GL.Texture = function Texture(width, height, options, gl) {
 		}
 		else if(this.texture_type == gl.TEXTURE_CUBE_MAP)
 		{
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
-			gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, this.format, this.width, this.height, 0, this.format, this.type, pixel_data || null );
 		}
 		gl.bindTexture(this.texture_type, null); //disable
 		gl.activeTexture(gl.TEXTURE0);
@@ -161,6 +165,23 @@ Texture.prototype.getProperties = function()
 	};
 }
 
+Texture.prototype.hasSameProperties = function(t)
+{
+	if(!t)
+		return false;
+	return t.width == this.width && 
+		t.height == this.height &&
+		t.type == this.type &&
+		t.format == this.format &&
+		t.texture_type == this.texture_type;
+}
+
+Texture.prototype.hasSameSize = function(t)
+{
+	if(!t)
+		return false;
+	return t.width == this.width && t.height == this.height;
+}
 //textures cannot be stored in JSON
 Texture.prototype.toJSON = function()
 {
@@ -184,11 +205,16 @@ Texture.isDepthSupported = function()
 * @param {number} unit texture unit
 * @return {number} returns the texture unit
 */
-Texture.prototype.bind = function(unit) {
-	if(unit == undefined) unit = 0;
+Texture.prototype.bind = function( unit ) {
+	if(unit == undefined)
+		unit = 0;
 	var gl = this.gl;
+
+	//TODO: if the texture is not uploaded, must be upload now
+
+	//bind
 	gl.activeTexture(gl.TEXTURE0 + unit);
-	gl.bindTexture(this.texture_type, this.handler);
+	gl.bindTexture( this.texture_type, this.handler );
 	return unit;
 }
 
@@ -260,6 +286,7 @@ Texture.prototype.uploadImage = function(image, options)
 		gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, image);
 		this.width = image.videoWidth || image.width;
 		this.height = image.videoHeight || image.height;
+		this.data = image;
 	} catch (e) {
 		if (location.protocol == 'file:') {
 			throw 'image not loaded for security reasons (serve this page over "http://" instead)';
@@ -269,6 +296,9 @@ Texture.prototype.uploadImage = function(image, options)
 		}
 	}
 
+	//TODO: add expand transparent pixels option
+
+	//generate mipmaps
 	if (this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
 		gl.generateMipmap(this.texture_type);
 		this.has_mipmaps = true;
@@ -289,6 +319,8 @@ Texture.prototype.uploadData = function(data, options )
 	Texture.setUploadOptions(options, gl);
 
 	gl.texImage2D(this.texture_type, 0, this.format, this.width, this.height, 0, this.format, this.type, data);
+	this.data = data; //should I clone it?
+
 	if (this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
 		gl.generateMipmap(texture.texture_type);
 		this.has_mipmaps = true;
@@ -297,6 +329,8 @@ Texture.prototype.uploadData = function(data, options )
 }
 
 //When creating cubemaps this is helpful
+
+/*THIS WORKS old
 Texture.cubemap_camera_parameters = [
 	{ type:"posX", dir: vec3.fromValues(-1,0,0), 	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(0,0,-1) },
 	{ type:"negX", dir: vec3.fromValues(1,0,0),		up: vec3.fromValues(0,1,0),	right: vec3.fromValues(0,0,1) },
@@ -305,17 +339,17 @@ Texture.cubemap_camera_parameters = [
 	{ type:"posZ", dir: vec3.fromValues(0,0,-1), 	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(1,0,0) },
 	{ type:"negZ", dir: vec3.fromValues(0,0,1),		up: vec3.fromValues(0,1,0),	right: vec3.fromValues(-1,0,0) }
 ];
-
-/* OLD VERSION, DOESNT MAKE SENSE
-Texture.cubemap_camera_parameters = [
-	{ type:"posX", dir: vec3.fromValues(1,0,0), 	up: vec3.fromValues(0,-1,0),	right: vec3.fromValues(0,0,-1) }, //positive X
-	{ type:"negX", dir: vec3.fromValues(-1,0,0),	up: vec3.fromValues(0,-1,0),	right: vec3.fromValues(0,0,1) }, //negative X
-	{ type:"posY", dir: vec3.fromValues(0,1,0), 	up: vec3.fromValues(0,0,1),		right: vec3.fromValues(1,0,0) }, //positive Y
-	{ type:"negY", dir: vec3.fromValues(0,-1,0),	up: vec3.fromValues(0,0,-1),	right: vec3.fromValues(-1,0,0) }, //negative Y
-	{ type:"posZ", dir: vec3.fromValues(0,0,1), 	up: vec3.fromValues(0,-1,0),	right: vec3.fromValues(1,0,0) }, //positive Z
-	{ type:"negZ", dir: vec3.fromValues(0,0,-1),	up: vec3.fromValues(0,-1,0),	right: vec3.fromValues(-1,0,0) } //negative Z
-];
 */
+
+//THIS works
+Texture.cubemap_camera_parameters = [
+	{ type:"posX", dir: vec3.fromValues(1,0,0), 	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(0,0,-1) },
+	{ type:"negX", dir: vec3.fromValues(-1,0,0),	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(0,0,1) },
+	{ type:"posY", dir: vec3.fromValues(0,1,0), 	up: vec3.fromValues(0,0,-1), right: vec3.fromValues(1,0,0) },
+	{ type:"negY", dir: vec3.fromValues(0,-1,0),	up: vec3.fromValues(0,0,1),	right: vec3.fromValues(1,0,0) },
+	{ type:"posZ", dir: vec3.fromValues(0,0,1), 	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(1,0,0) },
+	{ type:"negZ", dir: vec3.fromValues(0,0,-1),	up: vec3.fromValues(0,1,0),	right: vec3.fromValues(-1,0,0) }
+];
 
 
 
@@ -454,6 +488,7 @@ Texture.prototype.drawTo = function(callback, params)
 		}
 	}
 
+	this.data = null;
 
 	gl._current_texture_drawto = null;
 	gl._current_fbo_color = null;
@@ -568,6 +603,11 @@ Texture.drawTo = function( color_textures, callback, depth_texture )
 
 	callback();
 
+	//clear data
+	if(color_textures.length)
+		for(var i = 0; i < color_textures.length; ++i)
+			color_textures[i].data = null;
+
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 	gl.viewport(v[0], v[1], v[2], v[3]);
@@ -599,6 +639,9 @@ Texture.drawToColorAndDepth = function( color_texture, depth_texture, callback )
 
 	callback();
 
+	color_texture.data = null;
+	depth_texture.data = null;
+
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 	gl.viewport(v[0], v[1], v[2], v[3]);
@@ -618,7 +661,7 @@ Texture.prototype.copyTo = function( target_texture, shader, uniforms ) {
 	var gl = this.gl;
 
 	//save state
-	var current_fbo = gl.getParameter( gl.FRAMEBUFFER_BINDING );
+	var previous_fbo = gl.getParameter( gl.FRAMEBUFFER_BINDING );
 	var viewport = gl.getViewport(); 
 
 	if(!shader)
@@ -633,33 +676,70 @@ Texture.prototype.copyTo = function( target_texture, shader, uniforms ) {
 	//reuse fbo
 	var fbo = gl.__copy_fbo;
 	if(!fbo)
-		fbo = gl.__copy_fbo || gl.createFramebuffer();
+		fbo = gl.__copy_fbo = gl.createFramebuffer();
 	gl.bindFramebuffer( gl.FRAMEBUFFER, fbo );
 
 	gl.viewport(0,0,target_texture.width, target_texture.height);
 	if(this.texture_type == gl.TEXTURE_2D)
 	{
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target_texture.handler, 0);
-		this.toViewport( shader );
+		if(this.format !== gl.DEPTH_COMPONENT && this.format !== gl.DEPTH_STENCIL )
+		{
+			gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target_texture.handler, 0);
+			this.toViewport( shader );
+		}
+		else //copying a depth texture is harder
+		{
+			var color_renderbuffer = gl._color_renderbuffer = gl._color_renderbuffer || gl.createRenderbuffer();
+			var w = color_renderbuffer.width = target_texture.width;
+			var h = color_renderbuffer.height = target_texture.height;
+			
+			//attach color render buffer
+			gl.bindRenderbuffer( gl.RENDERBUFFER, color_renderbuffer );
+			gl.renderbufferStorage( gl.RENDERBUFFER, gl.RGBA4, w, h );
+			gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, color_renderbuffer );
+
+			//attach depth texture
+			var attachment_point = target_texture.format == gl.DEPTH_STENCIL ? gl.DEPTH_STENCIL_ATTACHMENT : gl.DEPTH_ATTACHMENT;
+			gl.framebufferTexture2D( gl.FRAMEBUFFER, attachment_point, gl.TEXTURE_2D, target_texture.handler, 0);
+
+			var complete = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
+			if(complete !== gl.FRAMEBUFFER_COMPLETE)
+				throw("FBO not complete: " + complete);
+
+			//enable depth test?
+			gl.enable( gl.DEPTH_TEST );
+			gl.depthFunc( gl.ALWAYS );
+			gl.colorMask( false,false,false,false );
+			//call shader that overwrites depth values
+			shader = GL.Shader.getCopyDepthShader();
+			this.toViewport( shader );
+			gl.colorMask( true,true,true,true );
+			gl.disable( gl.DEPTH_TEST );
+			gl.depthFunc( gl.LEQUAL );
+			gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, null );
+			gl.framebufferTexture2D( gl.FRAMEBUFFER, attachment_point, gl.TEXTURE_2D, null, 0);
+		}
 	}
 	else if(this.texture_type == gl.TEXTURE_CUBE_MAP)
 	{
 		shader.uniforms({u_texture: 0});
-		var rot_matrix = mat3.create();
+		var rot_matrix = GL.temp_mat3;
 		for(var i = 0; i < 6; i++)
 		{
 			gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, target_texture.handler, 0);
 			var face_info = GL.Texture.cubemap_camera_parameters[ i ];
+			mat3.identity( rot_matrix );
 			rot_matrix.set( face_info.right, 0 );
 			rot_matrix.set( face_info.up, 3 );
 			rot_matrix.set( face_info.dir, 6 );
+			//mat3.invert(rot_matrix,rot_matrix);
 			this.toViewport( shader,{ u_rotation: rot_matrix });
 		}
 	}
 	
 	//restore previous state
 	gl.setViewport(viewport); //restore viewport
-	gl.bindFramebuffer( gl.FRAMEBUFFER, current_fbo ); //restore fbo
+	gl.bindFramebuffer( gl.FRAMEBUFFER, previous_fbo ); //restore fbo
 
 	//generate mipmaps when needed
 	if (target_texture.minFilter && target_texture.minFilter != gl.NEAREST && target_texture.minFilter != gl.LINEAR) {
@@ -668,7 +748,8 @@ Texture.prototype.copyTo = function( target_texture, shader, uniforms ) {
 		target_texture.has_mipmaps = true;
 	}
 
-	gl.bindTexture(target_texture.texture_type, null); //disable
+	target_texture.data = null;
+	gl.bindTexture( target_texture.texture_type, null ); //disable
 	return this;
 }
 
@@ -693,8 +774,9 @@ Texture.prototype.toViewport = function(shader, uniforms)
 * Fills the texture with a constant color (uses gl.clear)
 * @method fill
 * @param {vec4} color rgba
+* @param {boolean} skip_mipmaps if true the mipmaps wont be updated
 */
-Texture.prototype.fill = function(color)
+Texture.prototype.fill = function(color, skip_mipmaps )
 {
 	var old_color = gl.getParameter( gl.COLOR_CLEAR_VALUE );
 	gl.clearColor( color[0], color[1], color[2], color[3] );
@@ -702,6 +784,12 @@ Texture.prototype.fill = function(color)
 		gl.clear( gl.COLOR_BUFFER_BIT );	
 	});
 	gl.clearColor( old_color[0], old_color[1], old_color[2], old_color[3] );
+
+	if (!skip_mipmaps && this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR ) {
+		this.bind();
+		gl.generateMipmap( this.texture_type );
+		this.has_mipmaps = true;
+	}
 }
 
 /**
@@ -773,7 +861,7 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 	//reuse fbo
 	var fbo = gl.__copy_fbo;
 	if(!fbo)
-		fbo = gl.__copy_fbo || gl.createFramebuffer();
+		fbo = gl.__copy_fbo = gl.createFramebuffer();
 	gl.bindFramebuffer( gl.FRAMEBUFFER, fbo );
 	gl.viewport(0,0, this.width, this.height);
 
@@ -808,14 +896,16 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 		if(!output_texture)
 			output_texture = new GL.Texture( this.width, this.height, this.getProperties() );
 
-		var rot_matrix = mat3.create();
+		var rot_matrix = GL.temp_mat3;
 		for(var i = 0; i < 6; ++i)
 		{
 			gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, output_texture.handler, 0);
 			var face_info = GL.Texture.cubemap_camera_parameters[ i ];
+			mat3.identity(rot_matrix);
 			rot_matrix.set( face_info.right, 0 );
 			rot_matrix.set( face_info.up, 3 );
 			rot_matrix.set( face_info.dir, 6 );
+			//mat3.invert(rot_matrix,rot_matrix);
 			shader._setUniform( "u_rotation", rot_matrix );
 			gl.drawArrays( gl.TRIANGLES, 0, 6 );
 		}
@@ -827,6 +917,8 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, temp_textur
 	//restore previous state
 	gl.setViewport(viewport); //restore viewport
 	gl.bindFramebuffer( gl.FRAMEBUFFER, current_fbo ); //restore fbo
+
+	output_texture.data = null;
 
 	//generate mipmaps when needed
 	if (output_texture.minFilter && output_texture.minFilter != gl.NEAREST && output_texture.minFilter != gl.LINEAR) {
@@ -853,16 +945,19 @@ Texture.fromURL = function(url, options, on_complete, gl) {
 	gl = gl || global.gl;
 
 	options = options || {};
+	options = Object.create(options); //creates a new options using the old one as prototype
+
 	var texture = options.texture || new GL.Texture(1, 1, options, gl);
 
 	if(url.length < 64)
 		texture.url = url;
 	texture.bind();
-	Texture.setUploadOptions(options);
 	var default_color = options.temp_color || Texture.loading_color;
+	//Texture.setUploadOptions(options);
+	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 	var temp_color = options.type == gl.FLOAT ? new Float32Array(default_color) : new Uint8Array(default_color);
-	gl.texImage2D(gl.TEXTURE_2D, 0, texture.format, texture.width, texture.height, 0, texture.format, texture.type, temp_color );
-	gl.bindTexture(texture.texture_type, null); //disable
+	gl.texImage2D( gl.TEXTURE_2D, 0, texture.format, texture.width, texture.height, 0, texture.format, texture.type, temp_color );
+	gl.bindTexture( texture.texture_type, null ); //disable
 	texture.ready = false;
 
 	if( url.toLowerCase().indexOf(".dds") != -1)
@@ -914,7 +1009,6 @@ Texture.fromImage = function(image, options) {
 	options = options || {};
 
 	var texture = options.texture || new GL.Texture(image.width, image.height, options);
-
 	texture.uploadImage( image, options );
 
 	texture.bind();
@@ -923,14 +1017,25 @@ Texture.fromImage = function(image, options) {
 	gl.texParameteri(texture.texture_type, gl.TEXTURE_WRAP_S, texture.wrapS );
 	gl.texParameteri(texture.texture_type, gl.TEXTURE_WRAP_T, texture.wrapT );
 
-
-	if (GL.isPowerOfTwo(texture.width) && GL.isPowerOfTwo(texture.height) && options.minFilter && options.minFilter != gl.NEAREST && options.minFilter != gl.LINEAR) {
-		texture.bind();
-		gl.generateMipmap(texture.texture_type);
-		texture.has_mipmaps = true;
+	if (GL.isPowerOfTwo(texture.width) && GL.isPowerOfTwo(texture.height) )
+	{
+		if( options.minFilter && options.minFilter != gl.NEAREST && options.minFilter != gl.LINEAR)
+		{
+			texture.bind();
+			gl.generateMipmap(texture.texture_type);
+			texture.has_mipmaps = true;
+		}
+	}
+	else
+	{
+		//no mipmaps supported
+		gl.texParameteri(texture.texture_type, gl.TEXTURE_MIN_FILTER, GL.LINEAR );
+		gl.texParameteri(texture.texture_type, gl.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE );
+		gl.texParameteri(texture.texture_type, gl.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE );
+		texture.has_mipmaps = false;
 	}
 	gl.bindTexture(texture.texture_type, null); //disable
-
+	texture.data = image;
 	if(options.keep_image)
 		texture.img = image;
 	return texture;
@@ -953,6 +1058,7 @@ Texture.fromVideo = function(video, options) {
 		texture.bind();
 		gl.generateMipmap(texture.texture_type);
 		texture.has_mipmaps = true;
+		texture.data = video;
 	}
 	gl.bindTexture(texture.texture_type, null); //disable
 	return texture;
@@ -1000,6 +1106,7 @@ Texture.fromMemory = function(width, height, pixels, options) //format in option
 
 	try {
 		gl.texImage2D(gl.TEXTURE_2D, 0, texture.format, width, height, 0, texture.format, texture.type, pixels);
+		texture.data = pixels;
 	} catch (e) {
 		if (location.protocol == 'file:') {
 		  throw 'image not loaded for security reasons (serve this page over "http://" instead)';
@@ -1097,6 +1204,7 @@ Texture.cubemapFromImages = function(images, options) {
 
 		for(var i = 0; i < 6; i++)
 			gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, texture.format, texture.format, texture.type, images[i]);
+		texture.data = images;
 	} catch (e) {
 		if (location.protocol == 'file:') {
 		  throw 'image not loaded for security reasons (serve this page over "http://" instead)';
@@ -1216,6 +1324,7 @@ Texture.cubemapFromURL = function(url, options, on_complete, gl) {
 	options = options || {};
 	options.texture_type = gl.TEXTURE_CUBE_MAP;
 	var texture = options.texture || new GL.Texture(1, 1, options);
+	options = Object.create(options); //creates a new options using the old one as prototype
 
 	texture.bind();
 	Texture.setUploadOptions(options);
@@ -1269,7 +1378,7 @@ Texture.prototype.getPixels = function( type, force_rgba, cubemap_face )
 	//reuse fbo
 	var fbo = gl.__copy_fbo;
 	if(!fbo)
-		fbo = gl.__copy_fbo || gl.createFramebuffer();
+		fbo = gl.__copy_fbo = gl.createFramebuffer();
 	gl.bindFramebuffer( gl.FRAMEBUFFER, fbo );
 
 	var buffer = null;
@@ -1316,6 +1425,7 @@ Texture.prototype.toCanvas = function( canvas, flip_y, max_size )
 	var w = Math.min( this.width, max_size );
 	var h = Math.min( this.height, max_size );
 
+	//cross
 	if(this.texture_type == gl.TEXTURE_CUBE_MAP)
 	{
 		w = w * 4;
@@ -1539,9 +1649,9 @@ Texture.blend = function( a, b, factor, out )
 * @method Texture.getWhiteTexture
 * @return {Texture} the white texture
 */
-Texture.getWhiteTexture = function()
+Texture.getWhiteTexture = function( gl )
 {
-	var gl = this.gl;
+	gl = gl || global.gl;
 	var tex = gl.textures[":white"];
 	if(tex)
 		return tex;
@@ -1555,9 +1665,9 @@ Texture.getWhiteTexture = function()
 * @method Texture.getBlackTexture
 * @return {Texture} the black texture
 */
-Texture.getBlackTexture = function()
+Texture.getBlackTexture = function( gl )
 {
-	var gl = this.gl;
+	gl = gl || global.gl;
 	var tex = gl.textures[":black"];
 	if(tex)
 		return tex;
@@ -1613,4 +1723,10 @@ Texture.releaseTemporary = function( tex )
 	if(!Texture.temporary_pool)
 		Texture.temporary_pool = [];
 	Texture.temporary_pool.push( tex );
+}
+
+//returns the next power of two bigger than size
+Texture.nextPOT = function( size )
+{
+	return Math.pow( 2, Math.ceil( Math.log(size) / Math.log(2) ) );
 }

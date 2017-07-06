@@ -77,6 +77,23 @@ Shader.compileSource = function( type, source, gl, shader )
 	return shader;
 }
 
+Shader.parseError = function( error_str, vs_code, fs_code )
+{
+	if(!error_str)
+		return null;
+
+	var t = error_str.split(" ");
+	var nums = t[5].split(":");
+
+	return {
+		type: t[0],
+		line_number: parseInt( nums[1] ),
+		line_pos: parseInt( nums[0] ),
+		line_code: ( t[0] == "Fragment" ? fs_code : vs_code ).split("\n")[ parseInt( nums[1] ) ],
+		err: error_str
+	};
+}
+
 /**
 * It updates the code inside one shader
 * @method updateShader
@@ -166,8 +183,12 @@ Shader.prototype.extractShaderInfo = function()
 		var data = gl.getActiveAttrib( this.program, i);
 		if(!data) break;
 		var func = Shader.getUniformFunc(data);
-		//this.uniformInfo[ data.name ] = { type: data.gl.getUniformLocation(this.program, data.name) };
-		this.uniformInfo[ data.name ] = { type: data.type, func: func, size: data.size, loc: null }; //gl.getAttribLocation( this.program, data.name )
+		this.uniformInfo[ data.name ] = { 
+			type: data.type,
+			func: func,
+			size: data.size,
+			loc: null 
+		}; //gl.getAttribLocation( this.program, data.name )
 		this.attributes[ data.name ] = gl.getAttribLocation(this.program, data.name );	
 	}
 }
@@ -338,8 +359,14 @@ Shader.prototype.uniforms = function(uniforms) {
 	gl._current_shader = this;
 
 	for (var name in uniforms)
-		this.setUniform( name, uniforms[name] );
+	{
+		var info = this.uniformInfo[ name ];
+		if (!info)
+			continue;
+		this._setUniform( name, uniforms[name] );
+		//this.setUniform( name, uniforms[name] );
 		//this._assing_uniform(uniforms, name, gl );
+	}
 
 	return this;
 }//uniforms
@@ -366,57 +393,84 @@ Shader.prototype.uniformsArray = function(array) {
 * @param {string} name
 * @param {*} value
 */
-Shader.prototype.setUniform = function(name, value)
-{
-	if(	this.gl._current_shader != this )
-		this.bind();
+Shader.prototype.setUniform = (function(){
+	var temps = [];
+	for(var i = 2; i <= 16; ++i)
+		temps[i] = new Float32Array(i);
 
-	var info = this.uniformInfo[name];
-	if (!info)
-		return;
+	return (function(name, value)
+	{
+		if(	this.gl._current_shader != this )
+			this.bind();
 
-	if(info.loc === null)
-		return;
+		var info = this.uniformInfo[name];
+		if (!info)
+			return;
 
-	//if(info.loc.constructor !== Function)
-	//	return;
+		if(info.loc === null)
+			return;
 
-	if(value == null) 
-		return;
+		if(value == null) //strict?
+			return;
 
-	if(value.constructor === Array)
-		value = new Float32Array( value );  //garbage generated...
+		if(value.constructor === Array)
+		{
+			var v = temps[ value.length ]; //reuse same container
+			if(v)
+			{
+				v.set(value);
+				value = v;
+			}
+			else
+				value = new Float32Array( value );  //garbage generated...
+		}
 
-	if(info.is_matrix)
-		info.func.call( this.gl, info.loc, false, value );
-	else
-		info.func.call( this.gl, info.loc, value );
-}
+		if(info.is_matrix)
+			info.func.call( this.gl, info.loc, false, value );
+		else
+			info.func.call( this.gl, info.loc, value );
+	});
+})();
 
 //skips enabling shader
-Shader.prototype._setUniform = function(name, value)
-{
-	var info = this.uniformInfo[ name ];
-	if (!info)
-		return;
+Shader.prototype._setUniform = (function(){
+	var temps = [];
+	for(var i = 2; i <= 16; ++i)
+		temps[i] = new Float32Array(i);
 
-	if(info.loc === null)
-		return;
+	return (function(name, value)
+	{
+		var info = this.uniformInfo[ name ];
+		if (!info)
+			return;
 
-	//if(info.loc.constructor !== Function)
-	//	return;
+		if(info.loc === null)
+			return;
 
-	if(value == null) 
-		return;
+		//if(info.loc.constructor !== Function)
+		//	return;
 
-	if(value.constructor === Array)
-		value = new Float32Array( value );  //garbage generated...
+		if(value == null) 
+			return;
 
-	if(info.is_matrix)
-		info.func.call( this.gl, info.loc, false, value );
-	else
-		info.func.call( this.gl, info.loc, value );
-}
+		if(value.constructor === Array)
+		{
+			var v = temps[ value.length ]; //reuse same container
+			if(v)
+			{
+				v.set(value);
+				value = v;
+			}
+			else
+				value = new Float32Array( value );  //garbage generated...
+		}
+
+		if(info.is_matrix)
+			info.func.call( this.gl, info.loc, false, value );
+		else
+			info.func.call( this.gl, info.loc, value );
+	});
+})();
 
 /**
 * Renders a mesh using this shader, remember to use the function uniforms before to enable the shader
@@ -582,6 +636,38 @@ Shader.dumpErrorToConsole = function(err, vscode, fscode)
 	console.groupCollapsed("Shader code");
 	console.log( lines.join("\n") );
 	console.groupEnd();
+}
+
+//helps to check if a variable value is valid to an specific uniform in a shader
+Shader.validateValue = function( value, uniform_info )
+{
+	if(value === null || value === undefined)
+		return false;
+
+	switch (uniform_info.type)
+	{
+		//used to validate shaders
+		case GL.INT: 
+		case GL.FLOAT: 
+		case GL.SAMPLER_2D: 
+		case GL.SAMPLER_CUBE: 
+			return isNumber(value);
+		case GL.INT_VEC2: 
+		case GL.FLOAT_VEC2:
+			return value.length === 2;
+		case GL.INT_VEC3: 
+		case GL.FLOAT_VEC3:
+			return value.length === 3;
+		case GL.INT_VEC4: 
+		case GL.FLOAT_VEC4:
+		case GL.FLOAT_MAT2:
+			 return value.length === 4;
+		case GL.FLOAT_MAT3:
+			 return value.length === 8;
+		case GL.FLOAT_MAT4:
+			 return value.length === 16;
+	}
+	return true;
 }
 
 //**************** SHADERS ***********************************
@@ -871,6 +957,28 @@ Shader.getBlurShader = function(gl)
 	return gl.shaders[":blur"] = shader;
 }
 
+//shader to copy a depth texture into another one
+Shader.getCopyDepthShader = function(gl)
+{
+	gl = gl || global.gl;
+	var shader = gl.shaders[":copy_depth"];
+	if(shader)
+		return shader;
+
+	var shader = new GL.Shader( Shader.SCREEN_VERTEX_SHADER,"\n\
+			#extension GL_EXT_frag_depth : enable\n\
+			precision highp float;\n\
+			varying vec2 v_coord;\n\
+			uniform sampler2D u_texture;\n\
+			void main() {\n\
+			   gl_FragDepthEXT = texture2D( u_texture, v_coord ).x;\n\
+			   gl_FragColor = vec4(1.0);\n\
+			}\n\
+			");
+	return gl.shaders[":copy_depth"] = shader;
+}
+
+//shader to copy a cubemap into another 
 Shader.getCubemapCopyShader = function(gl)
 {
 	gl = gl || global.gl;
@@ -885,7 +993,7 @@ Shader.getCubemapCopyShader = function(gl)
 			uniform mat3 u_rotation;\n\
 			void main() {\n\
 				vec2 uv = vec2( v_coord.x, 1.0 - v_coord.y );\n\
-				vec3 dir = vec3( uv - vec2(0.5), -0.5 );\n\
+				vec3 dir = vec3( uv - vec2(0.5), 0.5 );\n\
 				dir = u_rotation * dir;\n\
 			   gl_FragColor = textureCube( u_texture, dir );\n\
 			}\n\
@@ -893,7 +1001,7 @@ Shader.getCubemapCopyShader = function(gl)
 	return gl.shaders[":copy_cubemap"] = shader;
 }
 
-
+//shader to blur a cubemap
 Shader.getCubemapBlurShader = function(gl)
 {
 	gl = gl || global.gl;
@@ -922,7 +1030,7 @@ Shader.getCubemapBlurShader = function(gl)
 					for( int y = -2; y <= 2; y++ )\n\
 					{\n\
 						dir.xy = uv + vec2( u_offset.x * float(x), u_offset.y * float(y)) * 0.5;\n\
-						dir.z = -0.5;\n\
+						dir.z = 0.5;\n\
 						dir = u_rotation * dir;\n\
 						color = textureCube( u_texture, dir );\n\
 						color.xyz = color.xyz * color.xyz;/*linearize*/\n\
@@ -936,7 +1044,7 @@ Shader.getCubemapBlurShader = function(gl)
 	return gl.shaders[":blur_cubemap"] = shader;
 }
 
-
+//shader to do FXAA (antialiasing)
 Shader.FXAA_FUNC = "\n\
 	uniform vec2 u_viewportSize;\n\
 	uniform vec2 u_iViewportSize;\n\

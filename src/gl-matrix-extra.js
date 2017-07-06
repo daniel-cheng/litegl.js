@@ -154,6 +154,16 @@ vec3.polarToCartesian = function(out, v)
 	return out;
 }
 
+vec3.reflect = function(out, v, n)
+{
+	var x = v[0]; var y = v[1]; var z = v[2];
+	vec3.scale( out, n, -2 * vec3.dot(v,n) );
+	out[0] += x;
+	out[1] += y;
+	out[2] += z;
+	return out;
+}
+
 /* VEC4 */
 vec4.random = function(vec)
 {
@@ -353,6 +363,18 @@ mat4.scaleAndAdd = function(out, mat, mat2, v)
 	out[8] = mat[8] + mat2[8] * v; 	out[9] = mat[9] + mat2[9] * v; 	out[10] = mat[10] + mat2[10] * v; 	out[11] = mat[11] + mat2[11] * v;
 	out[12] = mat[12] + mat2[12] * v;  out[13] = mat[13] + mat2[13] * v; 	out[14] = mat[14] + mat2[14] * v; 	out[15] = mat[15] + mat2[15] * v;
 	return out;
+}
+
+quat.fromAxisAngle = function(axis, rad)
+{
+	var out = quat.create();
+    rad = rad * 0.5;
+    var s = Math.sin(rad);
+    out[0] = s * axis[0];
+    out[1] = s * axis[1];
+    out[2] = s * axis[2];
+    out[3] = Math.cos(rad);
+    return out;
 }
 
 /*
