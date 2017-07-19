@@ -40,10 +40,10 @@
                             <ul id="api-classes" class="apis classes">
                                 <li><a href="../classes/BBox.html">BBox</a></li>
                                 <li><a href="../classes/geo.html">geo</a></li>
+                                <li><a href="../classes/GL.html">GL</a></li>
                                 <li><a href="../classes/gl.html">gl</a></li>
                                 <li><a href="../classes/GL.Buffer.html">GL.Buffer</a></li>
                                 <li><a href="../classes/GL.FBO.html">GL.FBO</a></li>
-                                <li><a href="../classes/GL.GL.html">GL.GL</a></li>
                                 <li><a href="../classes/GL.Indexer.html">GL.Indexer</a></li>
                                 <li><a href="../classes/GL.Mesh.html">GL.Mesh</a></li>
                                 <li><a href="../classes/GL.Octree.html">GL.Octree</a></li>
@@ -54,7 +54,6 @@
                 
                 
                             <ul id="api-modules" class="apis modules">
-                                <li><a href="../modules/GL.html">GL</a></li>
                             </ul>
                         </div>
                     </div>
@@ -93,10 +92,9 @@
 
 
         <div class="foundat">
-            Defined in: <a href="../files/.._src_core.js.html#l29"><code>..&#x2F;src&#x2F;core.js:29</code></a>
+            Defined in: <a href="../files/.._src_core.js.html#l50"><code>..&#x2F;src&#x2F;core.js:50</code></a>
         </div>
 
-            Module: <a href="../modules/GL.html">GL</a>
 
 </div>
 
@@ -139,10 +137,6 @@
 
                             </li>
                             <li class="index-item method">
-                                <a href="#method_create">create</a>
-
-                            </li>
-                            <li class="index-item method">
                                 <a href="#method_destroy">destroy</a>
 
                             </li>
@@ -164,6 +158,10 @@
                             </li>
                             <li class="index-item method">
                                 <a href="#method_gl.reset">gl.reset</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_isMobile">isMobile</a>
 
                             </li>
                             <li class="index-item method">
@@ -203,7 +201,7 @@
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l115"><code>..&#x2F;src&#x2F;core.js:115</code></a>
+        <a href="../files/.._src_core.js.html#l155"><code>..&#x2F;src&#x2F;core.js:155</code></a>
         </p>
 
 
@@ -235,7 +233,7 @@ example: gl.ondraw = function(){ ... }   or  gl.onupdate = function(dt) { ... }<
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l457"><code>..&#x2F;src&#x2F;core.js:457</code></a>
+        <a href="../files/.._src_core.js.html#l521"><code>..&#x2F;src&#x2F;core.js:521</code></a>
         </p>
 
 
@@ -275,7 +273,7 @@ example: gl.ondraw = function(){ ... }   or  gl.onupdate = function(dt) { ... }<
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l373"><code>..&#x2F;src&#x2F;core.js:373</code></a>
+        <a href="../files/.._src_core.js.html#l437"><code>..&#x2F;src&#x2F;core.js:437</code></a>
         </p>
 
 
@@ -340,7 +338,7 @@ example: gl.ondraw = function(){ ... }   or  gl.onupdate = function(dt) { ... }<
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l217"><code>..&#x2F;src&#x2F;core.js:217</code></a>
+        <a href="../files/.._src_core.js.html#l257"><code>..&#x2F;src&#x2F;core.js:257</code></a>
         </p>
 
 
@@ -376,72 +374,6 @@ The event is a regular MouseEvent with some extra parameters</p>
 
 
 </div>
-<div id="method_create" class="method item">
-    <h3 class="name"><code>create</code></h3>
-
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-                <li class="arg">
-                        <code>options</code>
-                </li>
-            </ul><span class="paren">)</span>
-        </div>
-
-        <span class="returns-inline">
-            <span class="type">Gl</span>
-        </span>
-
-
-
-
-
-
-
-    <div class="meta">
-                <p>
-                Defined in
-        <a href="../files/.._src_core.js.html#l2"><code>..&#x2F;src&#x2F;core.js:2</code></a>
-        </p>
-
-
-
-    </div>
-
-    <div class="description">
-        <p>creates a new WebGL context (it can create the canvas or use an existing one)</p>
-
-    </div>
-
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-                <li class="param">
-                        <code class="param-name">options</code>
-                        <span class="type">Object</span>
-
-
-                    <div class="param-description">
-                        <p>supported are: width, height, canvas</p>
-
-                    </div>
-
-                </li>
-            </ul>
-        </div>
-
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                        <span class="type">Gl</span>:
-                    <p>gl context for webgl</p>
-
-            </div>
-        </div>
-
-
-</div>
 <div id="method_destroy" class="method item">
     <h3 class="name"><code>destroy</code></h3>
 
@@ -457,7 +389,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l170"><code>..&#x2F;src&#x2F;core.js:170</code></a>
+        <a href="../files/.._src_core.js.html#l210"><code>..&#x2F;src&#x2F;core.js:210</code></a>
         </p>
 
 
@@ -518,7 +450,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l683"><code>..&#x2F;src&#x2F;core.js:683</code></a>
+        <a href="../files/.._src_core.js.html#l747"><code>..&#x2F;src&#x2F;core.js:747</code></a>
         </p>
 
 
@@ -659,7 +591,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l101"><code>..&#x2F;src&#x2F;core.js:101</code></a>
+        <a href="../files/.._src_core.js.html#l141"><code>..&#x2F;src&#x2F;core.js:141</code></a>
         </p>
 
 
@@ -706,7 +638,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l596"><code>..&#x2F;src&#x2F;core.js:596</code></a>
+        <a href="../files/.._src_core.js.html#l660"><code>..&#x2F;src&#x2F;core.js:660</code></a>
         </p>
 
 
@@ -743,7 +675,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l481"><code>..&#x2F;src&#x2F;core.js:481</code></a>
+        <a href="../files/.._src_core.js.html#l545"><code>..&#x2F;src&#x2F;core.js:545</code></a>
         </p>
 
 
@@ -791,7 +723,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l745"><code>..&#x2F;src&#x2F;core.js:745</code></a>
+        <a href="../files/.._src_core.js.html#l809"><code>..&#x2F;src&#x2F;core.js:809</code></a>
         </p>
 
 
@@ -804,6 +736,49 @@ The event is a regular MouseEvent with some extra parameters</p>
     </div>
 
 
+
+
+</div>
+<div id="method_isMobile" class="method item">
+    <h3 class="name"><code>isMobile</code></h3>
+
+        <span class="paren">()</span>
+
+        <span class="returns-inline">
+            <span class="type">Boolean</span>
+        </span>
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/.._src_core.js.html#l914"><code>..&#x2F;src&#x2F;core.js:914</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Tells you if the app is running on a mobile device (iOS or Android)</p>
+
+    </div>
+
+
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                        <span class="type">Boolean</span>:
+                    <p>true if is running on a iOS or Android device</p>
+
+            </div>
+        </div>
 
 
 </div>
@@ -837,7 +812,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l651"><code>..&#x2F;src&#x2F;core.js:651</code></a>
+        <a href="../files/.._src_core.js.html#l715"><code>..&#x2F;src&#x2F;core.js:715</code></a>
         </p>
 
 
@@ -915,7 +890,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l92"><code>..&#x2F;src&#x2F;core.js:92</code></a>
+        <a href="../files/.._src_core.js.html#l132"><code>..&#x2F;src&#x2F;core.js:132</code></a>
         </p>
 
 
@@ -964,7 +939,7 @@ The event is a regular MouseEvent with some extra parameters</p>
     <div class="meta">
                 <p>
                 Defined in
-        <a href="../files/.._src_core.js.html#l613"><code>..&#x2F;src&#x2F;core.js:613</code></a>
+        <a href="../files/.._src_core.js.html#l677"><code>..&#x2F;src&#x2F;core.js:677</code></a>
         </p>
 
 

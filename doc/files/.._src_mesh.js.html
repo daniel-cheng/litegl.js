@@ -1438,10 +1438,10 @@ Mesh.prototype.getBoundingBox = function()
 * @method updateBounding
 */
 Mesh.prototype.updateBounding = function() {
-	var vertices = this.vertexBuffers[&quot;vertices&quot;].data;
+	var vertices = this.vertexBuffers[&quot;vertices&quot;];
 	if(!vertices)
 		return;
-	this.bounding = GL.Mesh.computeBounding(vertices, this.bounding);
+	this.bounding = GL.Mesh.computeBounding( vertices.data, this.bounding );
 }
 
 

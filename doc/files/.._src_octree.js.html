@@ -258,6 +258,8 @@ Octree.prototype.addToNode = function(faceVertices,faceIndices,faceElement,node,
 					if(node.facesIndices == null) node.facesIndices = [];
 					if(node.facesElement == null) node.facesElement = [];
 					node.facesVertices.push(faceVertices);
+					node.facesIndices.push(facesIndices);
+					node.facesElement.push(facesElement);
 				}
 			}
 		}

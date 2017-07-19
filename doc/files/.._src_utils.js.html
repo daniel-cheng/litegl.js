@@ -457,6 +457,14 @@ global.processFileAtlas = GL.processFileAtlas = function(data, skip_trim)
 	return files;
 }
 
+global.typedArrayToArray = function(array)
+{
+	var r = [];
+	r.length = array.length;
+	for(var i = 0; i &lt; array.length; i++)
+		r[i] = array[i];
+	return r;
+}
 
 global.hexColorToRGBA = (function() {
 	//to change the color: from http://www.w3schools.com/cssref/css_colorsfull.asp
