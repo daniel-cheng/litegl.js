@@ -422,7 +422,7 @@ Octree.testRayInNode = function( node, origin, direction )
 			test = Octree.hitTestTriangle( origin, direction, faceVertices.subarray(0,3) , faceVertices.subarray(3,6), faceVertices.subarray(6,9), faceIndices, faceElement );
 			if (test==null)
 				continue;
-			test.face = face;
+			test.face = faceVertices;
 			if(prev_test)
 				prev_test.mergeWith( test );
 			else
